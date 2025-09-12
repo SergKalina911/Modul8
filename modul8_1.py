@@ -162,5 +162,88 @@ print(deserialized_data)
 {'key': 'value', 'num': 100}
 
 
+                        Робота з класами користувача
+
+
+
+Ви можете зберігати об'єкти для подальшого використання, але є важлива умова. Самі класи та функції pickle 
+зберігати не вміє і, якщо вам потрібно розпакувати упакований об'єкт класу, то сам клас повинен бути оголошений 
+раніше у коді.
+
+Серіалізуємо екземпляр класу Human:"""
+
+import pickle
+
+class Human:
+    def __init__(self, name):
+        self.name = name
+
+bob = Human("Bob")
+with open("instance.pickle", "wb") as file:
+    pickle.dump(bob, file)
+
+"""Важливо, щоб клас Human був визначений у скрипті, який виконує десеріалізацію, із тією ж структурою та в тому ж 
+просторі імен, що й у скрипті, який виконав серіалізацію."""
+
+import pickle
+
+class Human:
+    def __init__(self, name):
+        self.name = name
+
+with open("instance.pickle", "rb") as file:
+    loaded_instance = pickle.load(file)
+
+print(loaded_instance.name)
+
+# Виведення: Bob
+"""
+Якщо при десеріалізації не вказати клас Human ми отримаємо помилку.
+
+import pickle
+
+with open("instance.pickle", "rb") as file:
+    loaded_instance = pickle.load(file)
+
+print(loaded_instance.name)
+
+
+
+Виведення буде про неможливість десеріалізувати клас Human:
+
+Traceback (most recent call last):
+  File "E:\\WebDir\\Works\\Python\\python-help-solution\\core_course\\topic8\\ex_pickle\\ex06.py", line 4, in <module>
+    loaded_instance = pickle.load(file)
+AttributeError: Can't get attribute 'Human' on <module '__main__' from 'E:\\\\WebDir\\\\Works\\\\Python\\\\python-help-solution\\\\core_course\\\\topic8\\\\ex_pickle\\\\ex06.py'>
+
+Ми бачимо, що серіалізація дозволяє зберегти стан об'єкта на даний момент для подальшого використання, але в яких 
+сценаріях це використовується?
+
+Одна із розповсюджених практик це збереження налаштувань програми. Якщо ваша програма дозволяє користувачам 
+налаштовувати різні параметри, ви можете серіалізувати ці налаштування в файл і десеріалізувати їх при наступному 
+запуску програми для користувача."""
+
+# Збереження налаштувань
+settings = {'theme': 'dark', 'language': 'ukrainian'}
+with open('settings.pickle', 'wb') as f:
+    pickle.dump(settings, f)
+
+# Завантаження налаштувань
+with open('settings.pickle', 'rb') as f:
+    loaded_settings = pickle.load(f)
+    
+print(loaded_settings)
+
+""" Також серіалізація може бути використана для кешування складних обчислень. Уявимо, що обчислення займають 
+багато часу, і інколи нам необхідно переривати виконання обчислень. Можна зберегти результати в серіалізованому 
+вигляді і швидко відновити їх при наступній ітерації обчислень.
+
+В веб розробці pickle найчастіше застосовується при передачі об'єктів між різними частинами програми, які працюють 
+як окремі процеси, або між програмами, які виконуються на різних комп'ютерах у мережі.
+
+Також інколи складні структури даних не вписуються в стандартні типи даних баз даних. В такому випадку, 
+серіалізація дозволяє перетворити ці структури в байтові рядки, які можна зберігати як текст або BLOB (Binary Large 
+Object) у базі даних.
+
 
 """
