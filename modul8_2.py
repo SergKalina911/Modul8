@@ -359,4 +359,192 @@ print(copy_list)
 
 """ Залежно від задачі, вам може бути достатньо використати поверхневу копію, або може знадобитися глибока копія для 
 забезпечення повної незалежності даних. Головне розуміти структуру та залежності даних у вашому об'єкті, щоб обрати 
-правильний метод копіювання."""
+правильний метод копіювання.
+
+
+                        Управління порядком копіювання об'єктів Python
+
+
+Ще одна проблема, яка вирішується за допомогою пакета copy — це копіювання об'єктів користувача.
+
+Щоб створити об'єкт, який буде коректно оброблятися функціями copy та deepcopy, заданий клас повинен реалізувати два 
+магічних методи: __copy__ та __deepcopy__ для поверхневого та глибокого копіювання відповідно.
+
+Коли викликаємо copy.copy() або copy.deepcopy() на об'єкті, Python автоматично шукає і викликає ці магічні методи в класі 
+об'єкта, якщо вони визначені.
+
+
+
+    - __copy__ повинен повертати поверхневу копію об'єкта.
+    - __deepcopy__ повинен повертати глибоку копію об'єкта. Він приймає додатковий аргумент memo, який є словником, що 
+    використовується для уникнення нескінченної рекурсії при копіюванні вкладених об'єктів, які посилаються самі на себе.
+
+Спочатку розглянемо простий приклад класу, який реалізує обидва ці методи:"""
+
+import copy
+
+class MyClass:
+    def __init__(self, value):
+        self.value = value
+
+    def __copy__(self):
+        print("Викликано __copy__")
+        return MyClass(self.value)
+
+    def __deepcopy__(self, memo=None):
+        print("Викликано __deepcopy__")
+        return MyClass(copy.deepcopy(self.value, memo))
+
+# Поверхневе копіювання
+obj = MyClass(5)
+obj_copy = copy.copy(obj)
+obj_copy.value = 10
+
+# Глибоке копіювання
+obj_deepcopy = copy.deepcopy(obj)
+obj_deepcopy.value = 20
+print(obj.value, obj_copy.value, obj_deepcopy.value)
+
+""" У нашому прикладі, при виклику copy.copy(obj) буде створено новий екземпляр MyClass з тим же значенням value. 
+При виклику copy.deepcopy(obj) також буде створено новий екземпляр, але з використанням copy.deepcopy для значення 
+value, що забезпечує глибоке копіювання будь-яких вкладених об'єктів.
+
+Виведення:
+Викликано __copy__
+Викликано __deepcopy__
+5 10 20
+
+Як бачимо все працює вірно. Із не розглянутого тут тільки те, що __deepcopy__ використовує словник memo. Словник memo 
+використовується для відстеження об'єктів, які вже були скопійовані під час поточної операції глибокого копіювання.
+
+Коли __deepcopy__ викликається для об'єкта, він перевіряє, чи існує вже копія цього об'єкта в словнику memo. Якщо так, 
+метод повертає посилання на вже скопійований об'єкт замість створення нової копії. Це запобігає створенню кількох копій 
+одного і того ж об'єкта під час глибокого копіювання та уникненню нескінченної рекурсії.
+
+У словнику memo ключами є ідентифікатори id об'єктів, а значеннями є вже скопійовані об'єкти. Це дозволяє швидко перевірити, 
+чи був об'єкт уже оброблений під час поточної операції копіювання.
+
+Тепер розглянемо більш складний приклад з вкладеними об'єктами:"""
+
+import copy
+
+class SimpleObject:
+    def __init__(self, greeting: str):
+        self.greeting = greeting
+
+class ComplexObject:
+    def __init__(self, value: int, nested_obj: SimpleObject):
+        self.value = value
+        self.nested_obj = nested_obj
+
+    def __copy__(self):
+        print("Викликано __copy__ для ComplexObject")
+        # Поверхневе копіювання не копіює вкладені об'єкти глибоко
+        return ComplexObject(self.value, self.nested_obj)
+
+    def __deepcopy__(self, memo=None):
+        print("Викликано __deepcopy__ для ComplexObject")
+        # Глибоке копіювання копіює вкладені об'єкти
+        return ComplexObject(
+            copy.deepcopy(self.value, memo), copy.deepcopy(self.nested_obj, memo)
+        )
+
+nested_obj = SimpleObject("Привіт")
+complex_obj = ComplexObject(5, nested_obj)
+
+# Створюємо копію та глибоку копію
+complex_obj_copy = copy.copy(complex_obj)
+complex_obj_deepcopy = copy.deepcopy(complex_obj)
+
+# Змінюємо значення вкладеного об'єкту nested_obj
+nested_obj.greeting = "Hello"
+
+# Дивимось зміни у об'єктах
+print(f"Copy object: {complex_obj_copy.nested_obj.greeting}")
+print(f"Deepcopy object: {complex_obj_deepcopy.nested_obj.greeting}")
+
+# Виведення:
+# Викликано __copy__ для ComplexObject
+# Викликано __deepcopy__ для ComplexObject
+# Copy object: Hello
+# Deepcopy object: Привіт
+
+""" У цьому прикладі, ComplexObject містить вкладений об'єкт класу SimpleObject. При поверхневому копіюванні __copy__, 
+вкладений об'єкт self.nested_obj не копіюється глибоко, тому коли ми вносимо зміни в оригінальному об'єкті nested_obj 
+вони вплинуть і на копію, що ми і бачимо в виведенні. При глибокому копіюванні __deepcopy__, вкладений об'єкт self.nested_obj 
+також копіюється глибоко, завдяки чому копія є повністю незалежною від оригіналу.
+
+Насправді, навіть без реалізації цих магічних методів все працюватиме як треба."""
+
+import copy
+
+class SimpleObject:
+    def __init__(self, greeting: str):
+        self.greeting = greeting
+
+class ComplexObject:
+    def __init__(self, value, nested_obj: SimpleObject):
+        self.value = value
+        self.nested_obj = nested_obj
+
+nested_obj = SimpleObject("Привіт")
+complex_obj = ComplexObject(5, nested_obj)
+
+# Створюємо копію та глибоку копію
+complex_obj_copy = copy.copy(complex_obj)
+complex_obj_deepcopy = copy.deepcopy(complex_obj)
+
+# Змінюємо значення вкладеного об'єкту nested_obj
+nested_obj.greeting = "Hello"
+
+# Дивимось зміни у об'єктах
+print(f"Copy object: {complex_obj_copy.nested_obj.greeting}")
+print(f"Deepcopy object: {complex_obj_deepcopy.nested_obj.greeting}")
+
+# Виведення:
+# Copy object: Hello
+# Deepcopy object: Привіт
+
+""" Мета було пояснити, як у Python можна налаштувати процеси поверхневого та глибокого копіювання об'єктів за 
+допомогою реалізації спеціальних методів __copy__ та __deepcopy__. Це дозволяє контролювати, як саме об'єкти клонуються, 
+коли використовуються функції copy() та deepcopy() з модуля copy та важливо для класів, які містять складні вкладені 
+структури або залежності.
+
+Наприклад, якщо наш об'єкт містить великі дані і вони не повинні бути дубльовані при копіюванні, то налаштування __deepcopy__ 
+дозволяє нам контролювати процес клонування. Це допомагає уникнути небажаного дублювання та забезпечує коректне копіювання 
+складних структур.
+
+Уявімо, що ми працюємо з класом, який представляє налаштування користувача, і ці налаштування включають в себе великий 
+набір даних (гігабайти даних), який не потрібно дублювати при кожному копіюванні, але з яким потрібно працювати в 
+ізольованому середовищі."""
+
+import copy
+
+class UserSettings:
+    def __init__(self, preferences, large_data_reference):
+        self.preferences = preferences
+        self.large_data_reference = large_data_reference
+
+    def __deepcopy__(self, memo):
+        print("Кастомізоване глибоке копіювання для UserSettings")
+        # Припустимо, що preferences - це невеликий словник, який можна безпечно скопіювати,
+        # а large_data_reference - це посилання на великий об'єкт даних, яке ми не хочемо дублювати.
+        new_preferences = copy.deepcopy(self.preferences, memo)
+        # Передаємо посилання на ті ж великі дані замість їх копіювання
+        new_obj = UserSettings(new_preferences, self.large_data_reference)
+        return new_obj
+
+# Створення екземпляра UserSettings
+original_settings = UserSettings({"language": "uk"}, large_data_reference="LargeDataID")
+
+# Глибоке копіювання з кастомізованою логікою
+settings_copy = copy.deepcopy(original_settings)
+
+""" Ми можемо налаштувати метод __deepcopy__ таким чином, що він дозволяє ефективно копіювати налаштування користувача, 
+не створюючи непотрібні копії великих об'єктів даних, до яких має бути лише посилання. Бо якщо ми тільки читаємо дані 
+об'єкту self.large_data_reference то взагалі немає необхідності дублювання цих даних при глибокому копіюванні. Такий 
+підхід дозволяє оптимізувати використання пам'яті та час виконання програми, зберігаючи при цьому необхідну гнучкість 
+у роботі з копіями об'єктів.
+
+
+"""
