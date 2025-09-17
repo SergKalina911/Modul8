@@ -713,3 +713,82 @@ persons.save_to_file()
 person_from_file = persons.read_from_file()
 print(persons.is_unpacking)  # False
 print(person_from_file.is_unpacking)  # True
+
+
+"""                                  Автоперевірка 7
+
+                        Теорія автоперевірки 7
+                        
+Python tries to save memory and not copy data from one memory location to another. Instead, the interpreter 
+creates a new reference (another instance) to an existing object instead of copying the contents.
+
+This behavior can cause errors when it comes to mutable types, dictionaries, lists, and user classes.
+
+To solve this problem, Python has a copying mechanism: functions from the copy package.
+
+To create a "surface" copy of an object, the copy package has a copy function. This function creates a new object 
+of the same type and then creates a reference to all the contents of the old object in the new one. This mechanism 
+is quite good for working with objects where there are no object variables at the first level of nesting, and it works 
+quite quickly. However, for objects with deep nesting, this function still won't have the desired effect:
+
+import copy
+
+my_list = [1, 2, {1: 'a'}]
+copy_list = copy.copy(my_list)
+copy_list.append(4)
+print(my_list)  # [1, 2, {1: 'a'}]
+print(copy_list)  # [1, 2, {1: 'a'}, 4]
+
+copy_list[2][2] = 'b'
+print(my_list)  # [1, 2, {1: 'a', 2: 'b'}]
+This example shows that even though a copy_list is already a new object (not a reference to my_list), the dictionary with 
+index 2 nested in it is the same dictionary for both copy_list and my_list.
+
+                        Завдання до автоперевірки 7
+
+To copy an instance of the Person class from the previous example, implement the copy_class_person function. 
+It takes an instance of the Person class as a parameter and returns a "surface" copy of the object using the 
+copy function from the copy package.
+
+Example:
+
+person = Person(
+    "Allen Raymond",
+    "nulla.ante@vestibul.co.uk",
+    "(992) 914-3792",
+    False,
+)
+
+copy_person = copy_class_person(person)
+
+print(copy_person == person)  # False
+print(copy_person.name == person.name)  # True
+...
+"""
+import copy
+
+
+
+class Person:
+    def __init__(self, name: str, email: str, phone: str, favorite: bool):
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.favorite = favorite
+        
+
+
+def copy_class_person(person):
+    return copy.copy(person)
+
+person = Person(
+    "Allen Raymond",
+    "nulla.ante@vestibul.co.uk",
+    "(992) 914-3792",
+    False,
+)
+
+copy_person = copy_class_person(person)
+
+print(copy_person == person)  # False
+print(copy_person.name == person.name)  # True
