@@ -901,4 +901,158 @@ new_persons.contacts[0].name = "Another name"
 print(persons.contacts[0].name)  # Allen Raymond
 print(new_persons.contacts[0].name)  # Another name
 
+"""                                  Автоперевірка 9
 
+                        Теорія автоперевірки 9
+                        
+Another problem solved by the copy package is copying user objects. To create an object that will be correctly processed 
+by the copy and deepcopy functions, your class must implement two magic methods: __copy__ and __deepcopy__ for surface and 
+deep copying, respectively.
+
+from copy import deepcopy, copy
+
+
+class Expenses:
+    def __init__(self):
+        self.data = {}
+        self.places = []
+
+    def spent(self, place, value):
+        self.data[str(place)] = value
+        self.places.append(place)
+
+    def __copy__(self):
+        copy_obj = Expenses()
+        copy_obj.data = copy(self.data)
+        copy_obj.places = copy(self.places)
+        return copy_obj
+
+    def __deepcopy__(self, memo):
+        copy_obj = Expenses()
+        memo[id(copy_obj)] = copy_obj
+        copy_obj.data = deepcopy(self.data)
+        copy_obj.places = deepcopy(self.places)
+        return copy_obj
+
+
+e = Expenses()
+e.spent('hotel', 100)
+e.spent('taxi', 10)
+print(e.places)  # ['hotel', 'taxi']
+
+e_copy = copy(e)
+print(e_copy is e)  # False
+e_copy.spent('bar', 30)
+print(e.places)  # ['hotel', 'taxi', 'bar']
+
+e_deep_copy = deepcopy(e)
+print(e_deep_copy is e)  # False
+e_deep_copy.spent(
+    'airport',
+    300
+)
+print(e.places)  # ['hotel', 'taxi', 'bar']
+print(e_deep_copy.places)  # ['hotel', 'taxi', 'bar', 'airport']
+
+By using the __copy__ and __deepcopy__ methods, you can control how a copy of your object is created. The __deepcopy__ method
+must necessarily take one argument - a dictionary in which all objects to be copied are written. This is necessary to avoid
+infinite recursion if an object is a common one for several copied objects. In this case, the deep copying algorithm can fall
+into an infinite loop, copying objects with references to each other in turn.
+
+The memo dictionary stores object IDs as keys and the objects themselves as values. When we override how copying should be done, 
+we don't need to use a memo if we know for sure that recursion will not occur.
+
+
+                        Завдання до автоперевірки 9
+
+Implement the __copy__ method for the Person class.
+
+Implement the __copy__ and __deepcopy__ methods for the Contacts class.
+"""
+
+import copy
+import pickle
+
+
+class Person:
+    def __init__(self, name: str, email: str, phone: str, favorite: bool):
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.favorite = favorite
+        
+
+    def __copy__(self):
+        copy_obj = Person(self.name, self.email, self.phone, self.favorite)
+        return copy_obj
+    
+class Contacts:
+    def __init__(self, filename: str, contacts: list[Person] = None):
+        if contacts is None:
+            contacts = []
+        self.filename = filename
+        self.contacts = contacts
+        self.is_unpacking = False
+        self.count_save = 0
+        
+
+    def save_to_file(self):
+        with open(self.filename, "wb") as file:
+            pickle.dump(self, file)
+
+    def read_from_file(self):
+        with open(self.filename, "rb") as file:
+            content = pickle.load(file)
+        return content
+
+    def __getstate__(self):
+        attributes = self.__dict__.copy()
+        attributes["count_save"] = attributes["count_save"] + 1
+        return attributes
+
+    def __setstate__(self, value):
+        self.__dict__ = value
+        self.is_unpacking = True
+
+    def __copy__(self):
+        copy_obj = Contacts(self.filename)
+        copy_obj.contacts = copy.copy(self.contacts)
+        return copy_obj
+        
+        
+
+    def __deepcopy__(self, memo):
+        copy_obj = Contacts(self.filename)
+        memo[id(copy_obj)] = copy_obj
+        copy_obj.contacts = copy.deepcopy(self.contacts)
+        return copy_obj
+
+
+def copy_class_person(person):
+    return copy.copy(person)
+
+
+def copy_class_contacts(contacts):
+    return copy.deepcopy(contacts)
+
+contacts = [
+    Person(
+        "Allen Raymond",
+        "nulla.ante@vestibul.co.uk",
+        "(992) 914-3792",
+        False,
+    ),
+    Person(
+        "Chaim Lewis",
+        "dui.in@egetlacus.ca",
+        "(294) 840-6685",
+        False,
+    ),
+]
+persons = Contacts("user_class.dat", contacts)
+new_persons = copy_class_contacts(persons)
+new_persons.contacts[0].name = "Another name"
+print(persons.contacts[0].name)  # Allen Raymond
+print(new_persons.contacts[0].name)  # Another name
+
+        
